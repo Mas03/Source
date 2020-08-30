@@ -13,7 +13,9 @@ import net.dv8tion.jda.api.requests.GatewayIntent.DIRECT_MESSAGE_TYPING
 import net.dv8tion.jda.api.requests.GatewayIntent.GUILD_MESSAGE_TYPING
 import net.dv8tion.jda.api.sharding.DefaultShardManagerBuilder
 import net.sourcebot.api.command.CommandHandler
-import net.sourcebot.api.data.GuildDataManager
+import net.sourcebot.api.configuration.GuildConfigurationManager
+import net.sourcebot.api.configuration.JsonSerial
+import net.sourcebot.api.configuration.Properties
 import net.sourcebot.api.database.MongoDB
 import net.sourcebot.api.database.MongoSerial
 import net.sourcebot.api.event.EventSystem
@@ -23,8 +25,6 @@ import net.sourcebot.api.permission.PermissionHandler
 import net.sourcebot.api.permission.SourcePermission
 import net.sourcebot.api.permission.SourceRole
 import net.sourcebot.api.permission.SourceUser
-import net.sourcebot.api.properties.JsonSerial
-import net.sourcebot.api.properties.Properties
 import net.sourcebot.api.response.EmbedResponse
 import net.sourcebot.impl.BaseModule
 import org.slf4j.Logger
@@ -46,7 +46,7 @@ class Source(val properties: Properties) {
     val sourceEventSystem = EventSystem<SourceEvent>()
     val jdaEventSystem = EventSystem<GenericEvent>()
 
-    val guildDataManager = GuildDataManager(File("storage"))
+    val guildConfigurationManager = GuildConfigurationManager(File("storage"))
     val mongodb = MongoDB(properties.required("mongodb"))
     val permissionHandler = PermissionHandler(mongodb, properties.required("global-admins"))
     val moduleHandler = ModuleHandler(this)
@@ -77,6 +77,13 @@ class Source(val properties: Properties) {
         registerSerial()
         loadModules()
         logger.info("Source is now online!")
+        Runtime.getRuntime().addShutdownHook(object : Thread() {
+            override fun run() {
+                moduleHandler.getModules().forEach(moduleHandler::disableModule)
+                shardManager.shards.forEach(JDA::shutdown)
+                guildConfigurationManager.saveAll()
+            }
+        })
     }
 
     private fun registerSerial() {
