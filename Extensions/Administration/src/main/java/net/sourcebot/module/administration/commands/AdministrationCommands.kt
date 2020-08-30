@@ -1,0 +1,45 @@
+package net.sourcebot.module.administration.commands
+
+import net.dv8tion.jda.api.entities.Message
+import net.sourcebot.api.command.RootCommand
+import net.sourcebot.api.command.argument.*
+import net.sourcebot.api.response.EmptyResponse
+import net.sourcebot.api.response.InfoResponse
+import net.sourcebot.api.response.Response
+
+abstract class AdministrationCommand internal constructor(
+        final override val name: String,
+        final override val description: String
+) : RootCommand() {
+    override val permission = "administration.$name"
+    override val guildOnly = true
+}
+
+class ChangelogCommand : AdministrationCommand(
+        "changelog", "Posts a new changelog in your guild."
+) {
+
+    override val argumentInfo = ArgumentInfo(
+            OptionalArgument("channel", "What channel to send the changelog to. (Defaults to the executed channel)"),
+            Argument("update", "What the changelog is about. Use `|` to create a new line")
+    )
+
+    override fun execute(message: Message, args: Arguments): Response {
+        val channel = args.next(Adapter.channel(message.guild)) ?: message.textChannel
+        val update = args.slurp(" ", "You didnt provide a update")
+
+        channel.sendMessage(ChangelogResponse(update).asEmbed(message.author)).queue()
+        return EmptyResponse()
+    }
+}
+
+private class ChangelogResponse constructor(
+        update: String
+) : InfoResponse(
+        "Guild Changelog", "Here is an overview of the changes"
+) {
+
+    init {
+        addField("Overview", "-${update.replace("|", "\n-")}", false)
+    }
+}
