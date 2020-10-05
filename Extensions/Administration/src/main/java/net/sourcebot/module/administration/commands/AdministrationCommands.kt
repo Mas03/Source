@@ -33,12 +33,38 @@ class ChangelogCommand : AdministrationCommand(
     }
 }
 
+class BroadcastCommand : AdministrationCommand(
+        "broadcast", "Broadcasts a message to your guild via the bot."
+) {
+    override val aliases = arrayOf("bc", "say")
+    override var cleanupResponse = false
+
+    override val argumentInfo = ArgumentInfo(
+            OptionalArgument("channel", "The channel you want to send the message to. (Defaults to the executed channel"),
+            OptionalArgument("embed", "Whether you want it into a embed."),
+            Argument("message", "The message content you want to broadcast")
+    )
+
+    override fun execute(message: Message, args: Arguments): Response {
+        message.delete().queue()
+        val channel = args.next(Adapter.channel(message.guild)) ?: message.textChannel
+
+        if (args.hasNext() && args.next()?.equals("embed", ignoreCase = true)!!) {
+            val embeddedMessage = InfoResponse("Broadcasted Message", args.slurp(" ", "You must provide a valid broadcast message"))
+                    .asEmbed(message.author)
+            channel.sendMessage(embeddedMessage).queue()
+        }
+        args.backtrack(1)
+        channel.sendMessage(args.slurp(" ", "You must provide a valid broadcast message")).queue()
+        return EmptyResponse()
+    }
+}
+
 private class ChangelogResponse constructor(
         update: String
 ) : InfoResponse(
         "Guild Changelog", "Here is an overview of the changes"
 ) {
-
     init {
         addField("Overview", "-${update.replace("|", "\n-")}", false)
     }

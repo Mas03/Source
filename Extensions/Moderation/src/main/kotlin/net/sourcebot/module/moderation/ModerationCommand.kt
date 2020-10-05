@@ -1,11 +1,11 @@
 package net.sourcebot.module.moderation
 
 import net.dv8tion.jda.api.entities.Message
-import net.sourcebot.api.response.Response
-import net.sourcebot.api.response.ErrorResponse
-import net.sourcebot.api.response.SuccessResponse
 import net.sourcebot.api.command.RootCommand
 import net.sourcebot.api.command.argument.*
+import net.sourcebot.api.response.ErrorResponse
+import net.sourcebot.api.response.Response
+import net.sourcebot.api.response.SuccessResponse
 
 abstract class ModerationCommand internal constructor(
     final override val name: String,
@@ -71,7 +71,6 @@ class MuteCommand : ModerationCommand(
         val duration = args.next("You did not specify a valid mute duration!")
         // Try to parse duration string
         val reason = args.slurp(" ", "You did not specify a mute reason!")
-        //TODO: Mute user
         return SuccessResponse(
             "Mute Success",
             "Muted ${String.format("%#s", target.user)} for $duration: $reason"
@@ -94,7 +93,7 @@ class TempbanCommand : ModerationCommand(
         val delDays = args.next(Adapter.int()) ?: 7
         val duration = args.next("You did not specify a valid tempban duration!")
         val reason = args.slurp(" ", "You did not specify a tempban reason!")
-        //TODO: Tempban, Case ID
+        message.guild.ban(target, delDays, reason)
         return SuccessResponse(
             "Tempban Success",
             "Tempbanned ${String.format("%#s", target.user)} for $duration: $reason"
